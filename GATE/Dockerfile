@@ -7,7 +7,7 @@
 #  
 
 FROM ubuntu:14.04
-MAINTAINER David Völgyes <david.volgyes AT ieee org>
+MAINTAINER David Volgyes <david.volgyes AT ieee org>
 
 #
 # Setting environment variables and download necessary tools:
@@ -21,14 +21,19 @@ RUN   apt-get install      -y --force-yes   dialog debconf-utils wget
 RUN   apt-get dist-upgrade -y --force-yes
 
 # Sources
-ADD http://geant4.web.cern.ch/geant4/support/source/geant4.9.6.p03.tar.gz   /opt/geant-src/
-ADD http://www.opengatecollaboration.org/sites/opengatecollaboration.org/files/gate_v7.0.tar_.gz /opt/
-ADD http://www.opengatecollaboration.org/sites/opengatecollaboration.org/files/lmf_v3_0_tar_gz_42819.gz /opt/
-ADD http://www.opengatecollaboration.org/sites/opengatecollaboration.org/files/ecat.tar.gz /opt/ecat/
+# ADD http://geant4.web.cern.ch/geant4/support/source/geant4.9.6.p03.tar.gz   /opt/geant-src/
+ADD http://cern.ch/geant4-data/releases/geant4.9.6.p04.tar.gz /opt/geant-src/
+
+# ADD http://www.opengatecollaboration.org/sites/opengatecollaboration.org/files/gate_v7.0.tar_.gz /opt/
+ADD http://www.opengatecollaboration.org/sites/default/files/gate_v7.0.tar.gz /opt/
+# ADD http://www.opengatecollaboration.org/sites/opengatecollaboration.org/files/lmf_v3_0_tar_gz_42819.gz /opt/
+ADD http://www.opengatecollaboration.org/sites/default/files/lmf_v3_0.tar_0.gz /opt/
+# ADD http://www.opengatecollaboration.org/sites/opengatecollaboration.org/files/ecat.tar.gz /opt/ecat/
+ADD http://www.opengatecollaboration.org/sites/default/files/ecat.tar.gz /opt/ecat/
 
 # Unfortunately, Docker does not support ftp protocol in its ADD command, so let's use wget
-RUN cd /opt/ && wget ftp://root.cern.ch/root/root_v5.34.21.source.tar.gz
-
+# RUN cd /opt/ && wget ftp://root.cern.ch/root/root_v5.34.21.source.tar.gz
+ADD https://root.cern.ch/download/root_v5.34.21.source.tar.gz /opt
 # Tools
 
 RUN   apt-get install -y --force-yes   unzip gcc-4.7 g++-4.7 g++-4.8 gcc-4.8 make cmake-curses-gui gzip tar mc 
@@ -63,20 +68,22 @@ RUN echo "/usr/lib/root" >/etc/ld.so.conf.d/root.conf
 RUN ldconfig
 
 # Extract Geant4
-RUN cd /opt/geant-src && tar -xvf geant4.9.6.p03.tar.gz
+RUN cd /opt/geant-src && tar -xvf ./geant4.9.6.p04.tar.gz
 
 # Patch CLHEP bug
-RUN sed -i "214i if(0) // disable this part, because it has a bug." /opt/geant-src/geant4.9.6.p03/source/externals/clhep/src/MTwistEngine.cc
+RUN sed -i "214i if(0) // disable this part, because it has a bug." /opt/geant-src/geant4.9.6.p04/source/externals/clhep/src/MTwistEngine.cc
 
 #Configure, compile and install Geant4
 RUN mkdir /opt/geant-build
-RUN cd /opt/geant-build && cmake -DGEANT4_INSTALL_DATA=ON -DCMAKE_INSTALL_PREFIX=/usr /opt/geant-src/geant4.9.6.p03
+RUN cd /opt/geant-build && cmake -DGEANT4_INSTALL_DATA=ON -DCMAKE_INSTALL_PREFIX=/usr /opt/geant-src/geant4.9.6.p04
 RUN make -C /opt/geant-build -j4
 RUN make -C /opt/geant-build install
 
 # Extract Gate v7, LMF and ECAT sources
-RUN cd /opt && tar -xvf gate_v7.0.tar_.gz 
-RUN cd /opt && tar -xvf lmf_v3_0_tar_gz_42819.gz
+#RUN cd /opt && tar -xvf gate_v7.0.tar.gz 
+#RUN cd /opt && tar -xvf lmf_v3_0_tar_gz_42819.gz
+RUN cd /opt && tar -xvf gate_v7.0.tar.gz 
+RUN cd /opt && tar -xvf lmf_v3_0.tar_0.gz
 RUN cd /opt/ecat && tar -xvf ecat.tar.gz
 
 # LMF build and install
@@ -95,7 +102,7 @@ RUN cp /opt/ecat/*.h /opt/ecat/include
 RUN ldconfig
 
 # Do NOT use ECAT utils! It's full with bugs!
-RUN rm -R /opt/ecat/utils
+# RUN rm -R /opt/ecat/utils
 
 # GATE 
 RUN mkdir /opt/gate
